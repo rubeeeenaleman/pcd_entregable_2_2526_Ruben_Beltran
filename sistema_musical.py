@@ -6,11 +6,24 @@ class Cancion:
         self.atributos_sentimentales = atributos_sentimentales
 
 class Cantante:
-    def __init__(self, nombre : str, fecha_nacimiento : str, atributos_sonoros : dict, atributos_sentimentales : dict):
+    def __init__(self, nombre : str, fecha_nacimiento : str, canciones : list):
         self.nombre = nombre
         self.fecha_nacimiento = fecha_nacimiento
 
     def calcular_atrb_sonoros():
         pass
     
-    def 
+    def calcular_atrb_sentimentales():
+        pass
+
+class Playlist:
+    def __init__(self, nombre : str, fecha_creacion : str, canciones : list):
+        self.nombre = nombre
+        self.fecha_creacion = fecha_creacion
+    
+    def calcular_atrb_sonoros():
+        pass
+    
+    def calcular_atrb_sentimentales():
+        pass
+    
