@@ -1,7 +1,7 @@
 from datetime import date
 from abc import ABC, abstractmethod
 from datetime import datetime
-
+import statistics
 
 class Cancion:
     def __init__(self, titulo : str, fecha_creacion : date, atributos_sonoros : dict, atributos_sentimentales : dict):
@@ -148,7 +148,35 @@ class ManejadorEstadisticos(ABC):
             return self.manejador_siguiente.calcular_estadisticos(historial_sesion, estadisticos_actuales)
         return estadisticos_actuales
 
-class CalcularEstadisticos(ManejadorEstadisticos):
+class ManejadorSonoros(ManejadorEstadisticos):
 
     def calcular_estadisticos(self, historial_sesion: list, estadisticos_actuales: dict):
         """queremos crear una función que extraiga las claves numéricas del diccionario de las canciones, agrupe los valores y calcule los estadísticos."""
+        valores = {} # diccionario donde agruparemos los valores que nos sirvan para calcular estadísticos.
+
+        # bucle para recorrer las canciones y extraer los atributos sonoros
+        for cancion in historial_sesion:
+            for clave, valor in cancion.atributos_sonoros.items():
+                if isinstance(valor, (int, float)): # comprueba que el valor que cogemos es un número ya que los atributos que necesitamos para calcular estadísticos como la media o desviación típica deben de ser esencialmente números.
+                    if clave not in valores:  # comprobamos si la clave existe en el diccionario vacío creado, de no ser así lo que hace es guardarla junto con una lista que es donde se almacenarán los valores de esa clave.
+                        valores[clave] = []
+                    valores[clave].append(valor)
+        
+        # una vez que tenemos el diccionario valores con los estadísticos que nos interesan realmente podemos pasar al cáclculo, nos ayudamos del módulo statistics
+        estadisticos_sonoros = {}
+        for clave, lista_valores in valores.items():
+            media = statistics.mean(valores)
+
+            desviacion_tipica = statistics.stdev(lista_valores) if len(lista_valores) > 1 else 0.0 # importante saber que para calcular la desviación es necesario al menos 2 valores, RECORDAMOS también que lista_valores es una lista.
+
+            estadisticos_sonoros[clave] = {
+                "media": media,
+                "dev_tipica": desviacion_tipica
+            }
+
+        estadisticos_actuales['sonoros'] = estadisticos_sonoros
+        
+        return super().calcular_estadisticos(historial_sesion, estadisticos_actuales)
+    
+    class ManejadorSentimentales(ManejadorEstadisticos):
+        """Mismo funcionamiento que la función calcular estadísticos pero esta vez con atributos sentimentales."""
