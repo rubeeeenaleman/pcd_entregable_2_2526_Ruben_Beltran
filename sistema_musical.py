@@ -132,4 +132,23 @@ class Recomendador(ObservadorUsuario):
         # si la sesión fuera de 10 cacniones, la canción 11, sería introducida por la canción 1 (cola)
         if len(self.historial_sesion) > self.limite_sesion:
             self.historial_sesion.pop(0)
-            
+    
+class ManejadorEstadisticos(ABC):
+    """Clase abstracta base para los eslabones de la cadena"""
+    def __init__(self):
+        self.manejador_siguiente = None
+    
+    def establecer_siguiente(self, manejador):
+        self.manejador_siguiente = manejador
+        return manejador
+    
+    @abstractmethod
+    def calcular_estadisticos(self, historial_sesion: list, estadisticos_actuales: dict):
+        if self.manejador_siguiente is not None:
+            return self.manejador_siguiente.calcular_estadisticos(historial_sesion, estadisticos_actuales)
+        return estadisticos_actuales
+
+class CalcularEstadisticos(ManejadorEstadisticos):
+
+    def calcular_estadisticos(self, historial_sesion: list, estadisticos_actuales: dict):
+        """queremos crear una función que extraiga las claves numéricas del diccionario de las canciones, agrupe los valores y calcule los estadísticos."""
