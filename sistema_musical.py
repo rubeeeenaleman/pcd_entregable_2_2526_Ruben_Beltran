@@ -166,7 +166,6 @@ class ManejadorSonoros(ManejadorEstadisticos):
         estadisticos_sonoros = {}
         for clave, lista_valores in valores.items():
             media = statistics.mean(valores)
-
             desviacion_tipica = statistics.stdev(lista_valores) if len(lista_valores) > 1 else 0.0 # importante saber que para calcular la desviación es necesario al menos 2 valores, RECORDAMOS también que lista_valores es una lista.
 
             estadisticos_sonoros[clave] = {
@@ -180,3 +179,26 @@ class ManejadorSonoros(ManejadorEstadisticos):
     
     class ManejadorSentimentales(ManejadorEstadisticos):
         """Mismo funcionamiento que la función calcular estadísticos pero esta vez con atributos sentimentales."""
+        def calcular_estadisticos(self, historial_sesion: list, estadisticos_actuales: dict):
+            valores = {}
+
+            for cancion in historial_sesion:
+                for clave, valor in cancion.atributos_sentimentales.items():
+                    if isinstance(valor(int, float)):
+                        if clave not in valores:
+                            valores[clave] = []
+                        valores[clave].append(valor)
+
+            estadisticos_sentimentales = {}
+            for clave, lista_valores in valores.items():
+                 media = statistics.mean(lista_valores)
+                 desviacion_tipica = statistics.stdev(lista_valores) if len(lista_valores) > 1 else 0.0
+
+                 estadisticos_sentimentales[clave] = {
+                     "media": media,
+                     "dev_tipica": desviacion_tipica
+                 }
+            
+            estadisticos_actuales['sentimentales'] = estadisticos_sentimentales
+            
+            return super().calcular_estadisticos(historial_sesion, estadisticos_actuales)
