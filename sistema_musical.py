@@ -165,7 +165,7 @@ class ManejadorSonoros(ManejadorEstadisticos):
         # una vez que tenemos el diccionario valores con los estadísticos que nos interesan realmente podemos pasar al cáclculo, nos ayudamos del módulo statistics
         estadisticos_sonoros = {}
         for clave, lista_valores in valores.items():
-            media = statistics.mean(valores)
+            media = statistics.mean(lista_valores)
             desviacion_tipica = statistics.stdev(lista_valores) if len(lista_valores) > 1 else 0.0 # importante saber que para calcular la desviación es necesario al menos 2 valores, RECORDAMOS también que lista_valores es una lista.
 
             estadisticos_sonoros[clave] = {
@@ -184,7 +184,7 @@ class ManejadorSentimentales(ManejadorEstadisticos):
 
         for cancion in historial_sesion:
             for clave, valor in cancion.atributos_sentimentales.items():
-                if isinstance(valor(int, float)):
+                if isinstance(valor, (int, float)):
                     if clave not in valores:
                         valores[clave] = []
                     valores[clave].append(valor)
@@ -203,3 +203,26 @@ class ManejadorSentimentales(ManejadorEstadisticos):
             
         return super().calcular_estadisticos(historial_sesion, estadisticos_actuales)
         
+"""A continuación, voy a implementar el patrón de estrategia de búsqueda:"""
+
+class EstrategiaBusqueda(ABC):
+    """Lo definimos como una clase abstracta donde las clases hijas que serán las distintas estrategias que vamos a implementar para que puedan usarse
+    heredarán un método que será buscar, este método en la clase EstrategiaBusqueda no hace nada, sino que hay que implementarla en cada una de las clases hijas 
+    según las necesidades."""
+
+    @abstractmethod
+    def buscar(self, catalogo, estadisticos: dict):
+        pass
+
+"""A continuación, tendremos las estrategias concretas, en este caso tenemos 3 tipos de búsquedas según dice el enunciado, estas son: alfabética, temporal y aleatoria."""
+class BusquedaAlfabetica(EstrategiaBusqueda):
+    def buscar(self, catalogo, estadisticos: dict):
+        pass # de momento lo dejo como pass, más adelante lo implemento, lo dejo así para que puedas trabajar ya si quieres.
+
+class BusquedaTemporal(EstrategiaBusqueda):
+    def buscar(self, catalogo, estadisticos: dict):
+        pass
+
+class BusquedaAleatoria(EstrategiaBusqueda):
+    def buscar(self, catalogo, estadisticos: dict):
+        pass
