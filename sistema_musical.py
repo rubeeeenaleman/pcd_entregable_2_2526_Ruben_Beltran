@@ -177,28 +177,29 @@ class ManejadorSonoros(ManejadorEstadisticos):
         
         return super().calcular_estadisticos(historial_sesion, estadisticos_actuales)
     
-    class ManejadorSentimentales(ManejadorEstadisticos):
-        """Mismo funcionamiento que la función calcular estadísticos pero esta vez con atributos sentimentales."""
-        def calcular_estadisticos(self, historial_sesion: list, estadisticos_actuales: dict):
-            valores = {}
+class ManejadorSentimentales(ManejadorEstadisticos):
+    """Mismo funcionamiento que la función calcular estadísticos pero esta vez con atributos sentimentales."""
+    def calcular_estadisticos(self, historial_sesion: list, estadisticos_actuales: dict):
+        valores = {}
 
-            for cancion in historial_sesion:
-                for clave, valor in cancion.atributos_sentimentales.items():
-                    if isinstance(valor(int, float)):
-                        if clave not in valores:
-                            valores[clave] = []
-                        valores[clave].append(valor)
+        for cancion in historial_sesion:
+            for clave, valor in cancion.atributos_sentimentales.items():
+                if isinstance(valor(int, float)):
+                    if clave not in valores:
+                        valores[clave] = []
+                    valores[clave].append(valor)
 
-            estadisticos_sentimentales = {}
-            for clave, lista_valores in valores.items():
-                 media = statistics.mean(lista_valores)
-                 desviacion_tipica = statistics.stdev(lista_valores) if len(lista_valores) > 1 else 0.0
+        estadisticos_sentimentales = {}
+        for clave, lista_valores in valores.items():
+                media = statistics.mean(lista_valores)
+                desviacion_tipica = statistics.stdev(lista_valores) if len(lista_valores) > 1 else 0.0
 
-                 estadisticos_sentimentales[clave] = {
-                     "media": media,
-                     "dev_tipica": desviacion_tipica
-                 }
+                estadisticos_sentimentales[clave] = {
+                    "media": media,
+                    "dev_tipica": desviacion_tipica
+                }
             
-            estadisticos_actuales['sentimentales'] = estadisticos_sentimentales
+        estadisticos_actuales['sentimentales'] = estadisticos_sentimentales
             
-            return super().calcular_estadisticos(historial_sesion, estadisticos_actuales)
+        return super().calcular_estadisticos(historial_sesion, estadisticos_actuales)
+        
