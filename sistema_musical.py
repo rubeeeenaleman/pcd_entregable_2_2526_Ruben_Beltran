@@ -97,12 +97,12 @@ class Recomendador(ObservadorUsuario):
     def __init__(self):
         self.catalogo = Catalogo()
         
-
+        self.estadisticos_sesion = {}
         self.historial_sesion = []
         self.limite_sesion = 10
         
         # blqoue de los resultados obtenidos por cada patron: 
-        self.cadena_estadisticos = None      # Chain of Responsibility
+        self.analizador_sesion = None      # Chain of Responsibility
         self.estrategia = None               # Strategy
         self.generador_recomendacion = None  # Decorator
         
@@ -132,6 +132,14 @@ class Recomendador(ObservadorUsuario):
         # si la sesión fuera de 10 cacniones, la canción 11, sería introducida por la canción 1 (cola)
         if len(self.historial_sesion) > self.limite_sesion:
             self.historial_sesion.pop(0)
+            
+        # debemos de añadir códgio para los estadísticos:
+        self.estadisticos_sesion = {}
+    def generar_recomendacion(self):
+        '''
+        Debemos de generar la recomendación usando los atributos del Recomendador
+        '''     
+        pass
     
 class ManejadorEstadisticos(ABC):
     """Clase abstracta base para los eslabones de la cadena"""
@@ -152,7 +160,7 @@ class ManejadorSonoros(ManejadorEstadisticos):
 
     def calcular_estadisticos(self, historial_sesion: list, estadisticos_actuales: dict):
         """queremos crear una función que extraiga las claves numéricas del diccionario de las canciones, agrupe los valores y calcule los estadísticos."""
-        valores = {} # diccionario donde agruparemos los valores que nos sirvan para calcular estadísticos.
+        valores = {} # diccionario donde agruparemos por clave el nombre del estadístico y valor una lista de los distitnos valores obtenidos
 
         # bucle para recorrer las canciones y extraer los atributos sonoros
         for cancion in historial_sesion:
@@ -163,7 +171,7 @@ class ManejadorSonoros(ManejadorEstadisticos):
                     valores[clave].append(valor)
         
         # una vez que tenemos el diccionario valores con los estadísticos que nos interesan realmente podemos pasar al cáclculo, nos ayudamos del módulo statistics
-        estadisticos_sonoros = {}
+        estadisticos_sonoros = {} 
         for clave, lista_valores in valores.items():
             media = statistics.mean(lista_valores)
             desviacion_tipica = statistics.stdev(lista_valores) if len(lista_valores) > 1 else 0.0 # importante saber que para calcular la desviación es necesario al menos 2 valores, RECORDAMOS también que lista_valores es una lista.
