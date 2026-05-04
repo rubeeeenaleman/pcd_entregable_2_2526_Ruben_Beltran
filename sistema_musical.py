@@ -15,9 +15,11 @@ class Cantante:
         self.nombre = nombre
         self.fecha_nacimiento = fecha_nacimiento
 
+        # AÑADIR EN LA V2
     def calcular_atrb_sonoros():
         pass
     
+        # AÑADIR EN LA V2
     def calcular_atrb_sentimentales():
         pass
 
@@ -26,9 +28,11 @@ class Playlist:
         self.nombre = nombre
         self.fecha_creacion = fecha_creacion
     
+    # AÑADIR EN LA V2
     def calcular_atrb_sonoros():
         pass
     
+    # AÑADIR EN LA V2
     def calcular_atrb_sentimentales():
         pass
 
@@ -233,4 +237,59 @@ class BusquedaTemporal(EstrategiaBusqueda):
 
 class BusquedaAleatoria(EstrategiaBusqueda):
     def buscar(self, catalogo, estadisticos: dict):
+        pass
+    
+    
+class GeneradorRecomendacion(ABC):
+    @abstractmethod
+    def generar(self, catalogo, estadisticos: dict, estrategia) -> list:
+        pass
+    
+class GeneradorCanciones(GeneradorRecomendacion):
+    '''Establecemos la recomendación por defecto'''
+    def generar(self, catalogo, estadisticos: dict, estrategia) :
+        
+        # primero usamos la estrategia, algo como
+        # resultados_no_filtrados = estrategia.buscar()
+        
+        # cuando tengamos todos los resultados , los filtramos para devolver las canciones recomendadas
+        pass
+
+class DecoradorRecomendacion(GeneradorRecomendacion):
+    # decorador para definir las otras subclases para generar recomendaciones
+    def __init__(self, componente: GeneradorRecomendacion):
+        self.componente = componente
+
+    @abstractmethod
+    def generar(self, catalogo, estadisticos: dict, estrategia):
+        pass
+
+
+class GeneradorArtistas(DecoradorRecomendacion):
+    def generar(self, catalogo, estadisticos: dict, estrategia) -> list:
+        # en este bloque tendremos que hacer algo como:
+        
+        # primero llamamos al método padre, y generamos la recomendación de canciones
+        #resultados = self.componente.generar()
+    
+        
+        # segundo vamos a la segunda capa, obteniendo aparte de las canciones los artistas, para ello usamos el patron strategy para buscarlos 
+        #resultados_no_filtrados = estrategia.buscar(
+        
+        # finalmente debemos de aplicar algun tipo de filtro para quedarnos con lo que queremos 
+        pass
+
+
+class GeneradorPlaylists(DecoradorRecomendacion):
+    def generar(self, catalogo, estadisticos: dict, estrategia) -> list:
+        # en este bloque tendremos que hacer algo como:
+        
+        # primero llamamos al método padre, y generamos la recomendación de canciones
+        #resultados = self.componente.generar()
+    
+        
+        # segundo vamos a la segunda capa, obteniendo aparte de las canciones los artistas, para ello usamos el patron strategy para buscarlos 
+        #resultados_no_filtrados = estrategia.buscar(
+        
+        # finalmente debemos de aplicar algun tipo de filtro para quedarnos con lo que queremos 
         pass
