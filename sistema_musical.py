@@ -2,6 +2,7 @@ from datetime import date
 from abc import ABC, abstractmethod
 from datetime import datetime
 import statistics
+import random
 
 class Cancion:
     def __init__(self, titulo : str, fecha_creacion : date, atributos_sonoros : dict, atributos_sentimentales : dict):
@@ -225,14 +226,39 @@ class EstrategiaBusqueda(ABC):
     @abstractmethod
     def buscar(self, catalogo, estadisticos: dict):
         pass
+    
+    #modificación, como esta función nos sirve para las tres estrategias de búsqueda distintas, mejor implementarla en la clase padre y que las hijas las hereden, asi ahorramos en líneas de código
+    def _hace_match(self, atributos_sonoros: dict, atributos_sentimentales: dict, estadisticos: dict):
+        '''esta función la voy a hacer porque es necesario para comprobar si los valores de los estadísticos de los atributos sonoros y sentimentales están dentro de un 
+        rango que definiremos, para por así decir, que haga match el primer elemento que coincida con las características sonoras y sentimental3s de la sesión de escucha actual.'''
+        margen = 15
 
+        if 'sonoros' in estadisticos:
+            for clave, calculos in estadisticos['sonoros'].items():
+                if clave in atributos_sonoros:
+                    valor_cancion = atributos_sonoros[clave]
+                    media_sesion = calculos['media']
+
+                    if not (media_sesion - margen <= valor_cancion <= media_sesion + margen):
+                        return False
+
+        if 'sentimentales' in estadisticos:
+            for clave, calculos in estadisticos['sentimentales'].items():
+                if clave in atributos_sentimentales:
+                    valor_cancion = atributos_sentimentales[clave]
+                    media_sesion = calculos['media']
+
+                    if not (media_sesion - margen <= valor_cancion <= media_sesion + margen):
+                        return False
+        
+        return True
 """A continuación, tendremos las estrategias concretas, en este caso tenemos 3 tipos de búsquedas según dice el enunciado, estas son: alfabética, temporal y aleatoria."""
 class BusquedaAlfabetica(EstrategiaBusqueda):
     def buscar(self, catalogo, estadisticos: dict):
         # lo primero que vamos a hacer es ordenar las canciones, los cantantes y las playlists
         canciones_ordenadas = sorted(catalogo.canciones, key=lambda c: c.titulo.lower())
         cantantes_ordenados = sorted(catalogo.cantantes, key=lambda c: c.nombre.lower())
-        playlist_ordenadas = sorted(catalogo.playlists, key=lambda c: c.nombre.lower())
+        playlist_ordenadas = sorted(catalogo.playlists, key=lambda p: p.nombre.lower())
 
         # con la función auxiliar creada, buscamos el primer match para canciones
         primera_cancion = None
@@ -261,38 +287,72 @@ class BusquedaAlfabetica(EstrategiaBusqueda):
             "cantante": primer_cantante
         }
         
-    def _hace_match(self, atributos_sonoros: dict, atributos_sentimentales: dict, estadisticos: dict):
-        '''esta función la voy a hacer porque es necesario para comprobar si los valores de los estadísticos de los atributos sonoros y sentimentales están dentro de un 
-        rango que definiremos, para por así decir, que haga match el primer elemento que coincida con las características sonoras y sentimental3s de la sesión de escucha actual.'''
-        margen = 15
-
-        if 'sonoros' in estadisticos:
-            for clave, calculos in estadisticos['sonoros'].items():
-                if clave in atributos_sonoros:
-                    valor_cancion = atributos_sonoros[clave]
-                    media_sesion = calculos['media']
-
-                    if not (media_sesion - margen <= valor_cancion <= media_sesion + margen):
-                        return False
-
-        if 'sentimentales' in estadisticos:
-            for clave, calculos in estadisticos['sentimentales'].items():
-                if clave in atributos_sentimentales:
-                    valor_cancion = atributos_sentimentales[clave]
-                    media_sesion = calculos['media']
-
-                    if not (media_sesion - margen <= valor_cancion <= media_sesion + margen):
-                        return False
-        
-        return True
-
-class BusquedaTemporal(EstrategiaBusqueda):
+class BusquedaTemporal(EstrategiaBusqueda): # esta estrategia de búsqueda es igual que la alfabética, lo único que nos cambia es la forma en la que ordenamos los datos.
     def buscar(self, catalogo, estadisticos: dict):
-        pass
+        # tenemos que ir del más nuevo al más antiguo!!, para ello hay que poner en el método sorted(): reverse = True
+        canciones_ordenadas = sorted(catalogo.canciones, key=lambda c: c.fecha, reverse=True)
+        cantantes_ordenados = sorted(catalogo.cantantes, key=lambda c: c.fecha_nacimiento, reverse=True)
+        playlist_ordenadas = sorted(catalogo.playlists, key=lambda p: p.fecha_creacion, reverse=True)
+
+        primera_cancion = None
+        for cancion in canciones_ordenadas:
+            if self._hace_match(cancion.atributos_sonoros, cancion.atributos_sentimentales, estadisticos):
+                primera_cancion = cancion
+                break
+        
+        primera_playlist = None
+        for playlist in playlist_ordenadas:
+             if self._hace_match(playlist.atributos_sonoros, playlist.atributos_sentimentales, estadisticos):
+                primera_playlist = playlist
+                break
+        
+        primer_cantante = None
+        for cantante in cantantes_ordenados:
+             if self._hace_match(cantante.atributos_sonoros, cantante.atributos_sentimentales, estadisticos):
+                primer_cantante = cantante
+                break
+        
+        return {
+            "cancion": primera_cancion,
+            "playlist": primera_playlist,
+            "cantante": primer_cantante
+        }
+
 
 class BusquedaAleatoria(EstrategiaBusqueda):
     def buscar(self, catalogo, estadisticos: dict):
-        pass
+        canciones_aleatorias = list(catalogo.canciones)
+        random.shuffle(canciones_aleatorias)
+
+        cantantes_aleatorios = list(catalogo.cantantes)
+        random.shuffle(cantantes_aleatorios)
+
+        playlists_aleatorias = list(catalogo.playlists)
+        random.shuffle(playlists_aleatorias)
+
+        primera_cancion = None
+        for cancion in canciones_aleatorias:
+            if self._hace_match(cancion.atributos_sonoros, cancion.atributos_sentimentales, estadisticos):
+                primera_cancion = cancion
+                break
+        
+        primera_playlist = None
+        for playlist in playlists_aleatorias:
+            if self._hace_match(playlist.atributos_sonoros, playlist.atributos_sentimentales, estadisticos):
+                primera_playlist = playlist
+                break
+        
+        primer_cantante = None
+        for cantante in cantantes_aleatorios:
+            if self._hace_match(cantante.atributos_sonoros, cantante.atributos_sentimentales, estadisticos):
+                primer_cantante = cantante
+                break
+
+        return {
+            "cancion": primera_cancion,
+            "playlist": primera_playlist,
+            "cantante": primer_cantante
+        }
     
     
 class GeneradorRecomendacion(ABC):
