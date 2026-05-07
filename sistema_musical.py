@@ -10,33 +10,61 @@ class Cancion:
         self.fecha = fecha_creacion
         self.atributos_sonoros = atributos_sonoros
         self.atributos_sentimentales = atributos_sentimentales
+        
+class EntidadMusical(ABC):
+    """
+    Clase padre abstracta. Contiene la lista de canciones y la lógica matemática 
+    para no repetirla en los hijos.
+    """
+    def __init__(self, canciones: list):
+        # El padre guarda las canciones que le pasen sus hijos
+        self.canciones = canciones
+        
+def calcular_atributos(self, tipo: str) :
+    '''
+    Para el cáclulo de los atributos debemos de suponer que cada una de las canciones comparten atributos.
+    '''
+    
+    if not self.canciones:
+        return {}
+    # obtenemos cada uno de los diccionarios por cada canción
+    lista_diccionarios = list(map(lambda c: c.atributos_sonoros if tipo == 'sonoro' else c.atributos_sentimentales, self.canciones))
 
-class Cantante:
-    def __init__(self, nombre : str, fecha_nacimiento : str, canciones : list):
+    # realizamos la suma
+    dict_suma = {}
+    for diccionario in lista_diccionarios:
+        for clave, valor in diccionario.items():
+            if clave in dict_suma:
+                dict_suma[clave] += valor
+            else:
+                dict_suma[clave] = valor
+    
+    # obtenemos las medias
+    num_canciones = len(lista_diccionarios)
+    dict_sol = {clave: (valor / num_canciones) for clave, valor in dict_suma.items()}
+        
+    return dict_sol
+        
+class Cantante(EntidadMusical):
+    '''
+    Al ser heredados de EntitdadMusical, ya tiene la fucnión de calcular atributo
+    '''
+    
+    def __init__(self, nombre : str, fecha_nacimiento : str, canciones: list):
         self.nombre = nombre
         self.fecha_nacimiento = fecha_nacimiento
-
-        # AÑADIR EN LA V2
-    def calcular_atrb_sonoros():
-        pass
+        super().__init__(canciones) # pasando la lista de canciones al padre, ya podremos calcular los atributos tanto sonoros como sentimentales
     
-        # AÑADIR EN LA V2
-    def calcular_atrb_sentimentales():
-        pass
-
-class Playlist:
-    def __init__(self, nombre : str, fecha_creacion : str, canciones : list):
+class Playlist(EntidadMusical):
+    '''
+    Al ser heredados de EntitdadMusical, ya tiene la fucnión de calcular atributo
+    '''
+    def __init__(self, nombre : str, fecha_creacion : str, canciones):
         self.nombre = nombre
         self.fecha_creacion = fecha_creacion
-    
-    # AÑADIR EN LA V2
-    def calcular_atrb_sonoros():
-        pass
-    
-    # AÑADIR EN LA V2
-    def calcular_atrb_sentimentales():
-        pass
-
+        super().__init__(canciones)
+        
+        
 class Catalogo:
     """Almacena todas las canciones, cantantes y playlists del sistema."""
     def __init__(self):
