@@ -470,23 +470,28 @@ class Recomendador:
 
 class Usuario:
     '''
-    Clase que representa el usuario (tambíen es el sujeto observado)
+    Clase que representa el usuario.
+    Cada usuario posee exactamente una instancia de Recomendador (Singleton)
     '''
-    def __init__(self, id, str, nombre: str, recomendador : Recomendador):
+    def __init__(self, id: str, nombre: str, catalogo : Catalogo):
         self.id = id
         self.nombre = nombre
+        self._recomendador: Recomendador = Recomendador.obtener_instancia(catalogo)
     
-    def reproducir_cancion(self):
-        '''
-        LLamamos al recomendador
-        '''
-        pass
-    
-    def solicitar_recomendacion(self):
-        '''
-        LLamamos al recomendadior
-        '''
-        pass
+    def reproducir_cancion(self, id_cancion: str):
+        fecha_hora = datetime.now()
+        self._recomendador.reproducir_cancion(id_cancion, fecha_hora)
         
+    def solicitar_recomendacion(self):
+        """El usuario solicita recomendaciones basadas en su sesión actual."""
+        return self._recomendador.generar_recomendacion()
 
-    
+    def cambiar_estrategia(self, estrategia: EstrategiaBusqueda):
+        self._recomendador.set_estrategia(estrategia)
+
+    def activar_artistas(self):
+        self._recomendador.activar_recomendacion_artistas()
+
+    def activar_playlists(self) :
+        self._recomendador.activar_recomendacion_playlists()
+
