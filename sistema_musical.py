@@ -1,27 +1,30 @@
-from datetime import date
+from datetime import date, datetime, timedelta
 from abc import ABC, abstractmethod
-from datetime import datetime
 import statistics
 import random
-from datetime import datetime
 from typing import List, Tuple, Dict
+import asyncio
 
-# Excepciones
+# --- Excepciones ---
 
 class SesionVaciaError(Exception):
     """Se lanza cuando se intenta generar recomendaciones sin historial."""
 
-
 class AtributosInvalidosError(ValueError):
     """Se lanza cuando los atributos de una canción son inválidos."""
 
+class CancionNoExisteError(Exception):
+    """Se lanza cuando se intenta reproducir una canción que no está en el catálogo."""
 
+
+    
+    
 class Cancion:
     '''
     Representa una canción del catálogo musical.
     '''
     
-    def __init__(self, titulo : str, fecha_creacion : date, atributos_sonoros : dict, atributos_sentimentales : dict):
+    def __init__(self, titulo: str, fecha_creacion: date, atributos_sonoros: dict, atributos_sentimentales: dict):
         self.titulo = titulo
         self.fecha = fecha_creacion
         self.atributos_sonoros = atributos_sonoros
@@ -31,13 +34,10 @@ class Cancion:
             raise AtributosInvalidosError(
                 "atrb_sonoros debe ser un diccionario no vacío."
             )
-        if not isinstance(atributos_sonoros, dict) or not atributos_sonoros:
+        if not isinstance(atributos_sentimentales, dict) or not atributos_sentimentales:
             raise AtributosInvalidosError(
                 "atrb_sentimentales debe ser un diccionario no vacío."
             )   
-        
-        
-        
         
         
 class EntidadMusical(ABC):
@@ -49,30 +49,30 @@ class EntidadMusical(ABC):
         # El padre guarda las canciones que le pasen sus hijos
         self.canciones: list[Cancion] = canciones
         
-def calcular_atributos(self, tipo: str) :
-    '''
-    Para el cáclulo de los atributos debemos de suponer que cada una de las canciones comparten atributos.
-    '''
-    
-    if not self.canciones:
-        return {}
-    # obtenemos cada uno de los diccionarios por cada canción
-    lista_diccionarios = list(map(lambda c: c.atributos_sonoros if tipo == 'sonoro' else c.atributos_sentimentales, self.canciones))
-
-    # realizamos la suma
-    dict_suma = {}
-    for diccionario in lista_diccionarios:
-        for clave, valor in diccionario.items():
-            if clave in dict_suma:
-                dict_suma[clave] += valor
-            else:
-                dict_suma[clave] = valor
-    
-    # obtenemos las medias
-    num_canciones = len(lista_diccionarios)
-    dict_sol = {clave: (valor / num_canciones) for clave, valor in dict_suma.items()}
+    def calcular_atributos(self, tipo: str) :
+        '''
+        Para el cáclulo de los atributos debemos de suponer que cada una de las canciones comparten atributos.
+        '''
         
-    return dict_sol
+        if not self.canciones:
+            return {}
+        # obtenemos cada uno de los diccionarios por cada canción
+        lista_diccionarios = list(map(lambda c: c.atributos_sonoros if tipo == 'sonoro' else c.atributos_sentimentales, self.canciones))
+
+        # realizamos la suma
+        dict_suma = {}
+        for diccionario in lista_diccionarios:
+            for clave, valor in diccionario.items():
+                if clave in dict_suma:
+                    dict_suma[clave] += valor
+                else:
+                    dict_suma[clave] = valor
+        
+        # obtenemos las medias
+        num_canciones = len(lista_diccionarios)
+        dict_sol = {clave: (valor / num_canciones) for clave, valor in dict_suma.items()}
+            
+        return dict_sol
         
 class Cantante(EntidadMusical):
     '''
@@ -92,7 +92,7 @@ class Playlist(EntidadMusical):
     
     Al ser heredados de EntitdadMusical, ya tiene la fucnión de calcular atributo
     '''
-    def __init__(self, nombre : str, fecha_creacion : str, canciones):
+    def __init__(self, nombre: str, fecha_creacion: str, canciones: list):
         self.nombre = nombre
         self.fecha_creacion = fecha_creacion
         super().__init__(canciones)
@@ -109,12 +109,14 @@ class Catalogo:
         self.canciones.append(cancion)
         
     def agregar_cantante(self, cantante: Cantante):
-        self.cantante.append(cantante)
+        self.cantantes.append(cantante)
         
     def agregar_playlist(self, playlist: Playlist):
-        self.playlist.append(playlist)
+        self.playlists.append(playlist)
 
-    
+
+# Patrón Chain of Responsibility 
+
 class ManejadorEstadisticos(ABC):
     """Clase abstracta base para los eslabones de la cadena"""
     def __init__(self):
@@ -133,18 +135,20 @@ class ManejadorEstadisticos(ABC):
 class ManejadorSonoros(ManejadorEstadisticos):
 
     def calcular_estadisticos(self, historial_sesion: list, estadisticos_actuales: dict):
-        """queremos crear una función que extraiga las claves numéricas del diccionario de las canciones, agrupe los valores y calcule los estadísticos."""
-        valores = {} # diccionario donde agruparemos por clave el nombre del estadístico y valor una lista de los distitnos valores obtenidos
+        """ 
+        Función que extraiga las claves numéricas del diccionario de las canciones, agrupe los valores y calcule los estadísticos.
+        """
+        valores = {} # historial_sesion guarda tuplas (Cancion, datetime)
 
         # bucle para recorrer las canciones y extraer los atributos sonoros
-        for cancion in historial_sesion:
+        for cancion, _ in historial_sesion:
             for clave, valor in cancion.atributos_sonoros.items():
-                if isinstance(valor, (int, float)): # comprueba que el valor que cogemos es un número ya que los atributos que necesitamos para calcular estadísticos como la media o desviación típica deben de ser esencialmente números.
+                if isinstance(valor, (int, float)): # comprueba que el valor que cogemos es un número 
                     if clave not in valores:  # comprobamos si la clave existe en el diccionario vacío creado, de no ser así lo que hace es guardarla junto con una lista que es donde se almacenarán los valores de esa clave.
                         valores[clave] = []
                     valores[clave].append(valor)
         
-        # una vez que tenemos el diccionario valores con los estadísticos que nos interesan realmente podemos pasar al cáclculo, nos ayudamos del módulo statistics
+        # una vez que tenemos el diccionario valores con los estadísticos que nos interesan, calculamos
         estadisticos_sonoros = {} 
         for clave, lista_valores in valores.items():
             media = statistics.mean(lista_valores)
@@ -156,15 +160,14 @@ class ManejadorSonoros(ManejadorEstadisticos):
             }
 
         estadisticos_actuales['sonoros'] = estadisticos_sonoros
-        
         return super().calcular_estadisticos(historial_sesion, estadisticos_actuales)
-    
+
 class ManejadorSentimentales(ManejadorEstadisticos):
-    """Mismo funcionamiento que la función calcular estadísticos pero esta vez con atributos sentimentales."""
+    """ Mismo funcionamiento que la función calcular estadísticos pero esta vez con atributos sentimentales.""" 
     def calcular_estadisticos(self, historial_sesion: list, estadisticos_actuales: dict):
         valores = {}
 
-        for cancion in historial_sesion:
+        for cancion, _ in historial_sesion:
             for clave, valor in cancion.atributos_sentimentales.items():
                 if isinstance(valor, (int, float)):
                     if clave not in valores:
@@ -173,16 +176,15 @@ class ManejadorSentimentales(ManejadorEstadisticos):
 
         estadisticos_sentimentales = {}
         for clave, lista_valores in valores.items():
-                media = statistics.mean(lista_valores)
-                desviacion_tipica = statistics.stdev(lista_valores) if len(lista_valores) > 1 else 0.0
+            media = statistics.mean(lista_valores)
+            desviacion_tipica = statistics.stdev(lista_valores) if len(lista_valores) > 1 else 0.0
 
-                estadisticos_sentimentales[clave] = {
-                    "media": media,
-                    "dev_tipica": desviacion_tipica
-                }
+            estadisticos_sentimentales[clave] = {
+                "media": media,
+                "dev_tipica": desviacion_tipica
+            }
             
         estadisticos_actuales['sentimentales'] = estadisticos_sentimentales
-            
         return super().calcular_estadisticos(historial_sesion, estadisticos_actuales)
         
 #Patrón de estrategia de búsqueda:"""
@@ -193,21 +195,20 @@ class EstrategiaBusqueda(ABC):
     según las necesidades."""
 
     @abstractmethod
-    def buscar(self, catalogo, estadisticos: dict):
+    def buscar(self, catalogo: Catalogo, estadisticos: dict) -> dict:
         pass
     
-    #modificación, como esta función nos sirve para las tres estrategias de búsqueda distintas, mejor implementarla en la clase padre y que las hijas las hereden, asi ahorramos en líneas de código
-    def _hace_match(self, atributos_sonoros: dict, atributos_sentimentales: dict, estadisticos: dict):
+    #implementamos en la clase padre para aprobechar la herencia
+    def _hace_match(self, atributos_sonoros: dict, atributos_sentimentales: dict, estadisticos: dict) -> bool:
         '''esta función la voy a hacer porque es necesario para comprobar si los valores de los estadísticos de los atributos sonoros y sentimentales están dentro de un 
         rango que definiremos, para por así decir, que haga match el primer elemento que coincida con las características sonoras y sentimental3s de la sesión de escucha actual.'''
-        margen = 15
+        margen = 35
 
         if 'sonoros' in estadisticos:
             for clave, calculos in estadisticos['sonoros'].items():
                 if clave in atributos_sonoros:
                     valor_cancion = atributos_sonoros[clave]
                     media_sesion = calculos['media']
-
                     if not (media_sesion - margen <= valor_cancion <= media_sesion + margen):
                         return False
 
@@ -216,11 +217,11 @@ class EstrategiaBusqueda(ABC):
                 if clave in atributos_sentimentales:
                     valor_cancion = atributos_sentimentales[clave]
                     media_sesion = calculos['media']
-
                     if not (media_sesion - margen <= valor_cancion <= media_sesion + margen):
                         return False
         
         return True
+    
     
     
 #A continuación, tendremos las estrategias concretas, en este caso tenemos 3 tipos de búsquedas según dice el enunciado, estas son: alfabética, temporal y aleatoria.
@@ -278,13 +279,13 @@ class BusquedaTemporal(EstrategiaBusqueda): # esta estrategia de búsqueda es ig
         
         primera_playlist = None
         for playlist in playlist_ordenadas:
-             if self._hace_match(playlist.atributos_sonoros, playlist.atributos_sentimentales, estadisticos):
+             if self._hace_match(playlist.calcular_atributos(tipo = 'sonoro'), playlist.calcular_atributos(tipo = 'sentimentales'), estadisticos):
                 primera_playlist = playlist
                 break
         
         primer_cantante = None
         for cantante in cantantes_ordenados:
-             if self._hace_match(cantante.atributos_sonoros, cantante.atributos_sentimentales, estadisticos):
+             if self._hace_match(cantante.calcular_atributos(tipo = 'sonoro'), cantante.calcular_atributos(tipo = 'sentimentales'), estadisticos):
                 primer_cantante = cantante
                 break
         
@@ -314,13 +315,13 @@ class BusquedaAleatoria(EstrategiaBusqueda):
         
         primera_playlist = None
         for playlist in playlists_aleatorias:
-            if self._hace_match(playlist.atributos_sonoros, playlist.atributos_sentimentales, estadisticos):
+            if self._hace_match(playlist.calcular_atributos(tipo = 'sonoro'), playlist.calcular_atributos(tipo = 'sentimentales'), estadisticos):
                 primera_playlist = playlist
                 break
         
         primer_cantante = None
         for cantante in cantantes_aleatorios:
-            if self._hace_match(cantante.atributos_sonoros, cantante.atributos_sentimentales, estadisticos):
+            if self._hace_match(cantante.calcular_atributos(tipo = 'sonoro'), cantante.calcular_atributos(tipo = 'sentimentales'), estadisticos):
                 primer_cantante = cantante
                 break
 
@@ -337,51 +338,49 @@ class GeneradorRecomendacion(ABC):
     Actua como la interfaz para todos los generadores
     """
     @abstractmethod
-    def generar(self, catalogo: Catalogo, estadisticos: dict, estrategia) -> list:
+    def generar(self, catalogo: Catalogo, estadisticos: dict, estrategia: EstrategiaBusqueda) -> list:
         pass
     
 class GeneradorCanciones(GeneradorRecomendacion):
-    '''Establecemos la recomendación por defecto, recoemndaciones de canciciones'''
-    def generar(self, catalogo, estadisticos: dict, estrategia) :
-        # usamos la estrategia
-        recomendacion = estrategia.buscar(self.catalogo, estadisticos, 'canciones')
-        
-        return [recomendacion] if recomendacion else []
+    '''Establecemos la recomendación por defecto, recomendaciones de canciciones'''
+    def generar(self, catalogo: Catalogo, estadisticos: dict, estrategia: EstrategiaBusqueda) -> list:
+        recomendacion = estrategia.buscar(catalogo, estadisticos)
+        # Extraemos solo la canción para la base
+        return [{'cancion': recomendacion['cancion']}] if recomendacion and recomendacion.get('cancion') else [] # comporbamos que exista la estrategia nos devuelva algo, y que exista la canción
 
 class DecoradorRecomendacion(GeneradorRecomendacion):
-    # decorador para definir las otras subclases para generar recomendaciones
     def __init__(self, componente: GeneradorRecomendacion):
-        super().__init__(componente.catalogo)
         self.componente = componente
 
     @abstractmethod
-    def generar(self, catalogo, estadisticos: dict, estrategia):
+    def generar(self, catalogo: Catalogo, estadisticos: dict, estrategia: EstrategiaBusqueda) -> list:
         pass
 
 
+
 class GeneradorArtistas(DecoradorRecomendacion):
-    def generar(self, catalogo, estadisticos: dict, estrategia) -> list:
+    def generar(self, catalogo: Catalogo, estadisticos: dict, estrategia: EstrategiaBusqueda) -> list:
         # primero llamamos al método padre, y generamos la recomendación de canciones
         recomendaciones = self.componente.generar(catalogo, estadisticos, estrategia)
         
         # segundo vamos a la segunda capa, obteniendo aparte de las canciones los artistas, para ello usamos el patron strategy
-        recomendacion_artista = estrategia.buscar(self.catalogo, estadisticos, 'cantante')
+        recomendacion_artista = estrategia.buscar(catalogo, estadisticos)
 
-        if recomendacion_artista:
-            recomendaciones.append(recomendacion_artista)
+        if recomendacion_artista and recomendacion_artista.get('cantante'):
+            recomendaciones.append({'cantante': recomendacion_artista['cantante']})
             
         return recomendaciones
 
 
 class GeneradorPlaylists(DecoradorRecomendacion):
-    def generar(self, catalogo, estadisticos: dict, estrategia) -> list:
+    def generar(self, catalogo: Catalogo, estadisticos: dict, estrategia: EstrategiaBusqueda) -> list:
         # primero llamamos al método padre, y generamos la recomendación de canciones
-        recomendaciones = self.componente.generar(estadisticos, estrategia)
+        recomendaciones = self.componente.generar(catalogo, estadisticos, estrategia)
         
         # segundo vamos a la segunda capa, obteniendo aparte de las canciones las playlist, para ello usamos el patron strategy 
-        recomendacion_playlist = estrategia.buscar(self.catalogo, estadisticos, 'playlist')
-        if recomendacion_playlist:
-            recomendaciones.append(recomendacion_playlist)
+        recomendacion_playlist = estrategia.buscar(catalogo, estadisticos)
+        if recomendacion_playlist and recomendacion_playlist.get('playlist'):
+            recomendaciones.append({'playlist': recomendacion_playlist['playlist']})
             
         return recomendaciones
 
@@ -394,38 +393,38 @@ class Recomendador:
     """
     _unicaInstancia = None
     
-    def __init__(self, catalogo) :
+    def __init__(self, catalogo: Catalogo):
         self.catalogo :Catalogo = catalogo
         
-        self.estadisticos_sesion : Dict[str, float] = {}
-        self.historial_sesion : List[Tuple[str, datetime]] = []
+        self.estadisticos_sesion: Dict[str, dict] = {}
+        self.historial_sesion: List[Tuple[Cancion, datetime]] = []
         self.limite_sesion = 10
         
         # blqoue de los resultados obtenidos por cada patron: 
-        self.analizador_sesion = None      # Chain of Responsibility
-        self.estrategia = None               # Strategy
-        self.generador_recomendacion = None  # Decorator
+        self.analizador_sesion: ManejadorEstadisticos = None    # Chain of Responsibility
+        self._estrategia: EstrategiaBusqueda = None             # Strategy
+        self._generador: GeneradorRecomendacion = None          # Decorator
         
     
     # como particularidad de ser un Singleton, debe de tener su porpio método obtener instancia    
     @classmethod # especificamos que este método es de la clase no de un objeto
-    def obtener_instancia(cls):
+    def obtener_instancia(cls, catalogo=None):
         """Método de clase estático para obtener la instancia única."""
         if not cls._unicaInstancia:
             # Si no existe, creamos la única instancia y la guardamos
-            cls._unicaInstancia = cls()
+            cls._unicaInstancia = cls(catalogo)
         return cls._unicaInstancia
     
     
-    def reproducir_cancion(self, id_cancion: str, fecha_hora: datetime):
+    def reproducir_cancion(self, cancion: Cancion, fecha_hora: datetime):
         """
         Simula que el usuario escucha una canción. 
         Actualiza la sesión y lanza el cálculo de estadísticos.
         """
-        print(f"Reproduciendo canción ID: {id_cancion} a las {fecha_hora}")
-        self.__actualizar_sesion(id_cancion, fecha_hora) # internamente actualizamos la sesion de escucha
+        print(f"Reproduciendo canción: {cancion.titulo} a las {fecha_hora.strftime('%H:%M:%S')}")
+        self.__actualizar_sesion(cancion, fecha_hora)  # internamente actualizamos la sesion de escucha
     
-    def __actualizar_sesion(self, id_cancion: str, fechahora: datetime):
+    def __actualizar_sesion(self, cancion: Cancion, fechahora: datetime):
         """
         Reacciona cuando el usuario notifica una escucha.
         
@@ -433,8 +432,7 @@ class Recomendador:
         """
         
        # añadimos la tupla cancion,fechahora a nuestro historial
-        self.historial_sesion.append((id_cancion, fechahora))
-        
+        self.historial_sesion.append((cancion, fechahora))
         
         # si la sesión fuera de 10 cacniones, la canción 11, sería introducida por la canción 1 (cola)
         if len(self.historial_sesion) > self.limite_sesion:
@@ -449,23 +447,21 @@ class Recomendador:
         """
         Delega la generación de la recomendación al Decorator usando el Strategy.
         """
-        if not self._estadisticos_sesion:
-            raise SesionVaciaError(
-                "La sesión está vacía. Escucha al menos una canción primero."
-            )
-        return self.generador_recomendaciones.generar(self.estadisticos_sesion, self.estrategia)
+        if not self.estadisticos_sesion:
+            raise SesionVaciaError("La sesión está vacía. Escucha al menos una canción primero.")
+        return self._generador.generar(self.catalogo, self.estadisticos_sesion, self._estrategia)
     
     # para una mayor felxibilidad debemos de tener configuración en tiempo de ejecución
     def set_estrategia(self, estrategia: EstrategiaBusqueda) -> None:
-        """Cambia la estrategia de búsqueda ."""
+        """Cambia la estrategia de búsqueda """
         self._estrategia = estrategia
 
     def activar_recomendacion_artistas(self) -> None:
-        """Envuelve el generador actual con el Decorador de artistas ."""
+        """Envuelve el generador actual con el Decorador de artistas """
         self._generador = GeneradorArtistas(self._generador)
 
     def activar_recomendacion_playlists(self) -> None:
-        """Envuelve el generador actual con el Decorador de playlists (R3)."""
+        """Envuelve el generador actual con el Decorador de playlists """
         self._generador = GeneradorPlaylists(self._generador)
 
 class Usuario:
@@ -473,14 +469,20 @@ class Usuario:
     Clase que representa el usuario.
     Cada usuario posee exactamente una instancia de Recomendador (Singleton)
     '''
-    def __init__(self, id: str, nombre: str, catalogo : Catalogo):
+    def __init__(self, id: str, nombre: str, catalogo: Catalogo):
         self.id = id
         self.nombre = nombre
+        self.catalogo = catalogo
         self._recomendador: Recomendador = Recomendador.obtener_instancia(catalogo)
     
-    def reproducir_cancion(self, id_cancion: str):
-        fecha_hora = datetime.now()
-        self._recomendador.reproducir_cancion(id_cancion, fecha_hora)
+    def reproducir_cancion(self, titulo_cancion: str):
+        # Buscamos el objeto canción por título para pasárselo al recomendador
+        cancion_obj = next((c for c in self.catalogo.canciones if c.titulo == titulo_cancion), None) # comporbamos si la canción coincide con el título buscado, con next solo nos quedamos con la primera aparición
+        if cancion_obj:
+            self._recomendador.reproducir_cancion(cancion_obj, datetime.now())
+        else:
+            raise CancionNoExisteError('Canción no encontrada en el catálogo.')
+
         
     def solicitar_recomendacion(self):
         """El usuario solicita recomendaciones basadas en su sesión actual."""
@@ -492,6 +494,87 @@ class Usuario:
     def activar_artistas(self):
         self._recomendador.activar_recomendacion_artistas()
 
-    def activar_playlists(self) :
+    def activar_playlists(self):
         self._recomendador.activar_recomendacion_playlists()
 
+
+async def simular_escucha_concurrente(usuario: Usuario, canciones_a_escuchar: list): # creamos una subrutina asicrona
+    """
+    Simula de forma asíncrona al usuario escuchando varias canciones.
+    """
+    print("\n[INICIANDO SESIÓN DE ESCUCHA]")
+    for titulo_cancion in canciones_a_escuchar:
+        await asyncio.sleep(0.5)
+        usuario.reproducir_cancion(titulo_cancion)
+        
+
+async def main(): # comenzamos con el sistema musical
+    try:
+        # CREACIÓN DEL CATÁLOGO Y DATOS ALEATORIOS
+        catalogo = Catalogo()
+        
+        # Generamos 10 canciones aleatorias
+        for i in range(1, 11):
+            c = Cancion(
+                titulo=f"Hit Musical {i}",
+                fecha_creacion=date.today() - timedelta(days=random.randint(1, 1000)),
+                atributos_sonoros={"ritmo": random.uniform(10.0, 90.0), "tono": random.uniform(10.0, 90.0)},
+                atributos_sentimentales={"felicidad": random.uniform(10.0, 90.0), "energia": random.uniform(10.0, 90.0)}
+            )
+            catalogo.agregar_cancion(c)
+
+        # Generamos un Cantante y una Playlist con canciones del catálogo
+        cantante = Cantante("Rosalía", "1992-09-25", [catalogo.canciones[0], catalogo.canciones[1]])
+        catalogo.agregar_cantante(cantante)
+
+        playlist = Playlist("Top Hits Verano", "2026-06-01", [catalogo.canciones[2], catalogo.canciones[3]])
+        catalogo.agregar_playlist(playlist)
+
+        # CREACIÓN DEL USUARIO 
+        usuario = Usuario(id="U_001", nombre="Rubén", catalogo=catalogo)
+                # iniciamos los patrones
+        recomendador = usuario._recomendador
+        
+        # Chain of Responsibility
+        manejador_sonoro = ManejadorSonoros()
+        manejador_sentimental = ManejadorSentimentales()
+        manejador_sonoro.establecer_siguiente(manejador_sentimental)
+        recomendador.analizador_sesion = manejador_sonoro
+        
+        # Decorator (Base)
+        recomendador._generador = GeneradorCanciones()
+        
+        # Estrategia Inicial
+        usuario.cambiar_estrategia(BusquedaAleatoria())
+        
+        # Añadimos Decoradores usando  métodos de Usuario
+        print("Añadiendo preferencias del usuario: Artistas y Playlists...")
+        usuario.activar_artistas()
+        usuario.activar_playlists()
+
+        #SIMULACIÓN ASÍNCRONA DE REPRODUCCIÓN
+        canciones_random = random.sample(catalogo.canciones, 4)
+        titulos_random = [c.titulo for c in canciones_random]
+        await simular_escucha_concurrente(usuario, titulos_random)
+        
+        print("\n[ESTADÍSTICOS CALCULADOS]")
+        for tipo, datos in recomendador.estadisticos_sesion.items():
+            print(f"  {tipo.upper()}:")
+            for metrica, valores in datos.items():
+                print(f"    - {metrica}: Media {valores['media']:.2f} | Desviación {valores['dev_tipica']:.2f}")
+
+        #SOLICITUD DE RECOMENDACIONES
+        print("\n[OBTENIENDO RECOMENDACIONES]")
+        recomendaciones = usuario.solicitar_recomendacion()
+        
+        for i, rec_dict in enumerate(recomendaciones):
+            print(f"\nResultados de la capa {i+1}:")
+            if rec_dict.get('cancion'): print(f"  Canción recomendada: {rec_dict['cancion'].titulo}")
+            if rec_dict.get('cantante'): print(f"  Cantante recomendado: {rec_dict['cantante'].nombre}")
+            if rec_dict.get('playlist'): print(f"  Playlist recomendada: {rec_dict['playlist'].nombre}")
+
+    except Exception as e:
+        print(f"\n[ERROR DURANTE LA EJECUCIÓN]: {e}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
