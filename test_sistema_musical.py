@@ -12,11 +12,10 @@ from sistema_musical import (
 
 @pytest.fixture
 def canciones_prueba():
-    c1 = Cancion("Canción1", date(2023, 1, 1), {"ritmo": 50.0}, {"energia": 60.0})
-    c2 = Cancion("Canción2", date(2024, 1, 1), {"ritmo": 50.0}, {"energia": 60.0})
-    c3 = Cancion("Canción3", date(2022, 1, 1), {"ritmo": 10.0}, {"energia": 10.0})
+    c1 = Cancion("A Canción", date(2023, 1, 1), {"ritmo": 50.0}, {"energia": 60.0})
+    c2 = Cancion("Z Canción", date(2024, 1, 1), {"ritmo": 50.0}, {"energia": 60.0})
+    c3 = Cancion("B Canción", date(2022, 1, 1), {"ritmo": 10.0}, {"energia": 10.0})
     return [c1, c2, c3]
-
 @pytest.fixture
 def catalogo_lleno(canciones_prueba):
     # usamos una fucnión de rellenado de catálogo
@@ -73,7 +72,7 @@ def test_catalogo(canciones_prueba):
     cat = Catalogo()
     cat.agregar_cancion(canciones_prueba[0])
     assert len(cat.canciones) == 1
-    assert cat.canciones[0].titulo == "Canción1"
+    assert cat.canciones[0].titulo == "A Canción"
     
     
 # --- CHAIN OF RESPONSIBILITY ---
@@ -97,3 +96,38 @@ def test_manejador_sentimentales(historial_mock):
     assert resultado['sentimentales']['energia']['media'] == 60.0
 
 
+
+# --- STRATEGY ---
+
+def test_busqueda_alfabetica(catalogo_lleno):
+    """Prueba principal de BusquedaAlfabetica: ordena de la A a la Z."""
+    busqueda = BusquedaAlfabetica()
+    estadisticos = {
+        'sonoros': {'ritmo': {'media': 50.0}},
+        'sentimentales': {'energia': {'media': 60.0}}
+    }
+    # Entre "A Canción" y "Z Canción" que hacen match, debe devolver "A Canción" primero
+    resultado = busqueda.buscar(catalogo_lleno, estadisticos)
+    assert resultado['cancion'].titulo == "A Canción"
+
+def test_busqueda_temporal(catalogo_lleno):
+    """Prueba principal de BusquedaTemporal: ordena del más nuevo al más antiguo."""
+    busqueda = BusquedaTemporal()
+    estadisticos = {
+        'sonoros': {'ritmo': {'media': 50.0}},
+        'sentimentales': {'energia': {'media': 60.0}}
+    }
+    # Z Canción (2024) es más nueva que A Canción (2023)
+    resultado = busqueda.buscar(catalogo_lleno, estadisticos)
+    assert resultado['cancion'].titulo == "Z Canción"
+
+def test_busqueda_aleatoria(catalogo_lleno):
+    """Prueba principal de BusquedaAleatoria: devuelve un elemento válido aleatorio."""
+    busqueda = BusquedaAleatoria()
+    estadisticos = {
+        'sonoros': {'ritmo': {'media': 50.0}},
+        'sentimentales': {'energia': {'media': 60.0}}
+    }
+    resultado = busqueda.buscar(catalogo_lleno, estadisticos)
+    # Solo comprobamos que devuelve algo que no sea None si hay match
+    assert resultado['cancion'] is not None
