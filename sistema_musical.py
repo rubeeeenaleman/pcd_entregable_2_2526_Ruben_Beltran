@@ -6,6 +6,16 @@ import random
 from datetime import datetime
 from typing import List, Tuple, Dict
 
+# Excepciones
+
+class SesionVaciaError(Exception):
+    """Se lanza cuando se intenta generar recomendaciones sin historial."""
+
+
+class AtributosInvalidosError(ValueError):
+    """Se lanza cuando los atributos de una canción son inválidos."""
+
+
 class Cancion:
     '''
     Representa una canción del catálogo musical.
@@ -16,6 +26,19 @@ class Cancion:
         self.fecha = fecha_creacion
         self.atributos_sonoros = atributos_sonoros
         self.atributos_sentimentales = atributos_sentimentales
+     
+        if not isinstance(atributos_sonoros, dict) or not atributos_sonoros:
+            raise AtributosInvalidosError(
+                "atrb_sonoros debe ser un diccionario no vacío."
+            )
+        if not isinstance(atributos_sonoros, dict) or not atributos_sonoros:
+            raise AtributosInvalidosError(
+                "atrb_sentimentales debe ser un diccionario no vacío."
+            )   
+        
+        
+        
+        
         
 class EntidadMusical(ABC):
     """
