@@ -81,7 +81,7 @@ class Cantante(EntidadMusical):
     Al ser heredados de EntitdadMusical, ya tiene la fucnión de calcular atributo
     '''
     
-    def __init__(self, nombre : str, fecha_nacimiento : str, canciones: list):
+    def __init__(self, nombre: str, fecha_nacimiento: date, canciones: list):
         self.nombre = nombre
         self.fecha_nacimiento = fecha_nacimiento
         super().__init__(canciones) # pasando la lista de canciones al padre, ya podremos calcular los atributos tanto sonoros como sentimentales
@@ -92,7 +92,7 @@ class Playlist(EntidadMusical):
     
     Al ser heredados de EntitdadMusical, ya tiene la fucnión de calcular atributo
     '''
-    def __init__(self, nombre: str, fecha_creacion: str, canciones: list):
+    def __init__(self, nombre: str, fecha_creacion: date, canciones: list):
         self.nombre = nombre
         self.fecha_creacion = fecha_creacion
         super().__init__(canciones)
@@ -187,7 +187,7 @@ class ManejadorSentimentales(ManejadorEstadisticos):
         estadisticos_actuales['sentimentales'] = estadisticos_sentimentales
         return super().calcular_estadisticos(historial_sesion, estadisticos_actuales)
         
-#Patrón de estrategia de búsqueda:"""
+#Patrón de estrategia de búsqueda
 
 class EstrategiaBusqueda(ABC):
     """Lo definimos como una clase abstracta donde las clases hijas que serán las distintas estrategias que vamos a implementar para que puedan usarse
@@ -244,7 +244,7 @@ class BusquedaAlfabetica(EstrategiaBusqueda):
                 primera_cancion = cancion
                 break
         
-        # ahora se hace lo mismo para la playlist y para el cantante (DOY POR ECHO QUE VAN A TENER UNOS MÉTODOS QUE DIGAN SUS ATRIBUTOS SENTIMENTALES Y SONOROS.)
+        # ahora se hace lo mismo para la playlist y para el cantante 
         primera_playlist = None
         for playlist in playlist_ordenadas:
              if self._hace_match(playlist.calcular_atributos(tipo = 'sonoro'), playlist.calcular_atributos(tipo = 'sentimentales'), estadisticos):
@@ -535,18 +535,18 @@ async def main(): # comenzamos con el sistema musical
             catalogo.agregar_cancion(c)
 
         # Generamos varios Cantantes y Playlists con varias canciones del catálogo 
-        cantante1 = Cantante("Rosalía", "1992-09-25", catalogo.canciones[0:15])
-        cantante2 = Cantante("C. Tangana", "1990-07-16", catalogo.canciones[15:30])
-        cantante3 = Cantante("Dua Lipa", "1995-08-22", catalogo.canciones[30:50])
+        cantante1 = Cantante("Rosalía", date.fromisoformat("1992-09-25"), catalogo.canciones[0:15])
+        cantante2 = Cantante("C. Tangana", date.fromisoformat("1990-07-16"), catalogo.canciones[15:30])
+        cantante3 = Cantante("Dua Lipa", date.fromisoformat("1995-08-22"), catalogo.canciones[30:50])
         catalogo.agregar_cantante(cantante1)
         catalogo.agregar_cantante(cantante2)
         catalogo.agregar_cantante(cantante3)
 
         # Hacemos lo mismo con las Playlists, incluso cruzando canciones de distintos cantantes
-        playlist1 = Playlist("Top Hits Verano", "2026-06-01", catalogo.canciones[5:25])
-        playlist2 = Playlist("Chill Out Domingo", "2025-11-15", catalogo.canciones[20:45])
+        playlist1 = Playlist("Top Hits Verano", date.fromisoformat("2026-06-01"), catalogo.canciones[5:25])
+        playlist2 = Playlist("Chill Out Domingo", date.fromisoformat("2025-11-15"), catalogo.canciones[20:45])
         canciones_workout = catalogo.canciones[0:10] + catalogo.canciones[40:50]
-        playlist3 = Playlist("Workout Extremo", "2026-01-10", canciones_workout)
+        playlist3 = Playlist("Workout Extremo", date.fromisoformat("2026-01-10"), canciones_workout)
         
         catalogo.agregar_playlist(playlist1)
         catalogo.agregar_playlist(playlist2)
