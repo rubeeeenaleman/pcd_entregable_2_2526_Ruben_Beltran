@@ -507,32 +507,55 @@ async def simular_escucha_concurrente(usuario: Usuario, canciones_a_escuchar: li
         await asyncio.sleep(0.5)
         usuario.reproducir_cancion(titulo_cancion)
         
+def imprimir_recomendaciones(recomendaciones):
+    """Función auxiliar para imprimir las recomendaciones de forma limpia."""
+    if not recomendaciones:
+        print("  Ningún elemento cumplió con el margen establecido.")
+        return
+        
+    for i, rec_dict in enumerate(recomendaciones):
+        print(f"\n  Resultados de la capa {i+1}:")
+        if rec_dict.get('cancion'): print(f"    Canción recomendada: {rec_dict['cancion'].titulo}")
+        if rec_dict.get('cantante'): print(f"    Cantante recomendado: {rec_dict['cantante'].nombre}")
+        if rec_dict.get('playlist'): print(f"    Playlist recomendada: {rec_dict['playlist'].nombre}")
 
 async def main(): # comenzamos con el sistema musical
     try:
         # CREACIÓN DEL CATÁLOGO Y DATOS ALEATORIOS
         catalogo = Catalogo()
         
-        # Generamos 10 canciones aleatorias
-        for i in range(1, 11):
+        # Generamos 50 canciones aleatorias para tener más variedad
+        for i in range(1, 51):
             c = Cancion(
-                titulo=f"Hit Musical {i}",
+                titulo=f"Hit Musical {i:02d}", # Formato 01, 02 para que la búsqueda alfabética se vea mejor
                 fecha_creacion=date.today() - timedelta(days=random.randint(1, 1000)),
                 atributos_sonoros={"ritmo": random.uniform(10.0, 90.0), "tono": random.uniform(10.0, 90.0)},
                 atributos_sentimentales={"felicidad": random.uniform(10.0, 90.0), "energia": random.uniform(10.0, 90.0)}
             )
             catalogo.agregar_cancion(c)
 
-        # Generamos un Cantante y una Playlist con canciones del catálogo
-        cantante = Cantante("Rosalía", "1992-09-25", [catalogo.canciones[0], catalogo.canciones[1]])
-        catalogo.agregar_cantante(cantante)
+        # Generamos varios Cantantes y Playlists con varias canciones del catálogo 
+        cantante1 = Cantante("Rosalía", "1992-09-25", catalogo.canciones[0:15])
+        cantante2 = Cantante("C. Tangana", "1990-07-16", catalogo.canciones[15:30])
+        cantante3 = Cantante("Dua Lipa", "1995-08-22", catalogo.canciones[30:50])
+        catalogo.agregar_cantante(cantante1)
+        catalogo.agregar_cantante(cantante2)
+        catalogo.agregar_cantante(cantante3)
 
-        playlist = Playlist("Top Hits Verano", "2026-06-01", [catalogo.canciones[2], catalogo.canciones[3]])
-        catalogo.agregar_playlist(playlist)
+        # Hacemos lo mismo con las Playlists, incluso cruzando canciones de distintos cantantes
+        playlist1 = Playlist("Top Hits Verano", "2026-06-01", catalogo.canciones[5:25])
+        playlist2 = Playlist("Chill Out Domingo", "2025-11-15", catalogo.canciones[20:45])
+        canciones_workout = catalogo.canciones[0:10] + catalogo.canciones[40:50]
+        playlist3 = Playlist("Workout Extremo", "2026-01-10", canciones_workout)
+        
+        catalogo.agregar_playlist(playlist1)
+        catalogo.agregar_playlist(playlist2)
+        catalogo.agregar_playlist(playlist3)
 
         # CREACIÓN DEL USUARIO 
         usuario = Usuario(id="U_001", nombre="Rubén", catalogo=catalogo)
-                # iniciamos los patrones
+        
+        # iniciamos los patrones
         recomendador = usuario._recomendador
         
         # Chain of Responsibility
@@ -547,13 +570,13 @@ async def main(): # comenzamos con el sistema musical
         # Estrategia Inicial
         usuario.cambiar_estrategia(BusquedaAleatoria())
         
-        # Añadimos Decoradores usando  métodos de Usuario
+        # Añadimos Decoradores usando métodos de Usuario
         print("Añadiendo preferencias del usuario: Artistas y Playlists...")
         usuario.activar_artistas()
         usuario.activar_playlists()
 
-        #SIMULACIÓN ASÍNCRONA DE REPRODUCCIÓN
-        canciones_random = random.sample(catalogo.canciones, 4)
+        # SIMULACIÓN ASÍNCRONA DE REPRODUCCIÓN
+        canciones_random = random.sample(catalogo.canciones, 8)
         titulos_random = [c.titulo for c in canciones_random]
         await simular_escucha_concurrente(usuario, titulos_random)
         
@@ -563,18 +586,32 @@ async def main(): # comenzamos con el sistema musical
             for metrica, valores in datos.items():
                 print(f"    - {metrica}: Media {valores['media']:.2f} | Desviación {valores['dev_tipica']:.2f}")
 
-        #SOLICITUD DE RECOMENDACIONES
-        print("\n[OBTENIENDO RECOMENDACIONES]")
+        # SOLICITUD DE RECOMENDACIONES: ESTRATEGIA ALEATORIA
+        print("\n[OBTENIENDO RECOMENDACIONES - ESTRATEGIA ALEATORIA]")
         recomendaciones = usuario.solicitar_recomendacion()
-        
-        for i, rec_dict in enumerate(recomendaciones):
-            print(f"\nResultados de la capa {i+1}:")
-            if rec_dict.get('cancion'): print(f"  Canción recomendada: {rec_dict['cancion'].titulo}")
-            if rec_dict.get('cantante'): print(f"  Cantante recomendado: {rec_dict['cantante'].nombre}")
-            if rec_dict.get('playlist'): print(f"  Playlist recomendada: {rec_dict['playlist'].nombre}")
+        imprimir_recomendaciones(recomendaciones)
+
+        # PRUEBA DE CAMBIO DE ESTRATEGIA: ALFABÉTICA
+        print("\n[CAMBIANDO ESTRATEGIA: Búsqueda Alfabética...]")
+        usuario.cambiar_estrategia(BusquedaAlfabetica())
+        recomendaciones_alf = usuario.solicitar_recomendacion()
+        imprimir_recomendaciones(recomendaciones_alf)
+
+        # PRUEBA DE CAMBIO DE ESTRATEGIA: TEMPORAL
+        print("\n[CAMBIANDO ESTRATEGIA: Búsqueda Temporal...]")
+        usuario.cambiar_estrategia(BusquedaTemporal())
+        recomendaciones_temp = usuario.solicitar_recomendacion()
+        imprimir_recomendaciones(recomendaciones_temp)
+
+        # PRUEBA DE MANEJO DE ERRORES ESPERADOS
+        print("\n[PRUEBA DE ERROR: Intentando reproducir canción inexistente]")
+        try:
+            usuario.reproducir_cancion("Canción Fantasma 3000")
+        except Exception as error_esperado:
+            print(f"  -> ¡Excepción capturada correctamente!: {type(error_esperado).__name__} - {error_esperado}")
 
     except Exception as e:
-        print(f"\n[ERROR DURANTE LA EJECUCIÓN]: {e}")
+        print(f"\n[ERROR DURANTE LA EJECUCIÓN DEL SISTEMA]: {e}")
 
 if __name__ == "__main__":
     asyncio.run(main())
