@@ -3,8 +3,14 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 import statistics
 import random
+from datetime import datetime
+from typing import List, Tuple, Dict
 
 class Cancion:
+    '''
+    Representa una canción del catálogo musical.
+    '''
+    
     def __init__(self, titulo : str, fecha_creacion : date, atributos_sonoros : dict, atributos_sentimentales : dict):
         self.titulo = titulo
         self.fecha = fecha_creacion
@@ -13,12 +19,12 @@ class Cancion:
         
 class EntidadMusical(ABC):
     """
-    Clase padre abstracta. Contiene la lista de canciones y la lógica matemática 
-    para no repetirla en los hijos.
+    Clase abstracta base para entidades que agrupan canciones (Cantante, Playlist).
+    Los atributos sonoros y sentimentales se obtienen como la media de los atributos de sus canciones.
     """
-    def __init__(self, canciones: list):
+    def __init__(self, canciones: list[Cancion]):
         # El padre guarda las canciones que le pasen sus hijos
-        self.canciones = canciones
+        self.canciones: list[Cancion] = canciones
         
 def calcular_atributos(self, tipo: str) :
     '''
@@ -47,6 +53,8 @@ def calcular_atributos(self, tipo: str) :
         
 class Cantante(EntidadMusical):
     '''
+    Artista musical con nombre y fecha de nacimiento.
+    
     Al ser heredados de EntitdadMusical, ya tiene la fucnión de calcular atributo
     '''
     
@@ -57,13 +65,15 @@ class Cantante(EntidadMusical):
     
 class Playlist(EntidadMusical):
     '''
+    Lista de reproducción con título y fecha de creación.
+    
     Al ser heredados de EntitdadMusical, ya tiene la fucnión de calcular atributo
     '''
     def __init__(self, nombre : str, fecha_creacion : str, canciones):
         self.nombre = nombre
         self.fecha_creacion = fecha_creacion
         super().__init__(canciones)
-        
+        # pasando la lista de canciones al padre, ya podremos calcular los atributos tanto sonoros como sentimentales
         
 class Catalogo:
     """Almacena todas las canciones, cantantes y playlists del sistema."""
@@ -71,108 +81,16 @@ class Catalogo:
         self.canciones: list[Cancion] = []
         self.cantantes: list[Cantante] = []
         self.playlists: list[Playlist] = []
+        
+    def agregar_cancion(self, cancion: Cancion):
+        self.canciones.append(cancion)
+        
+    def agregar_cantante(self, cantante: Cantante):
+        self.cantante.append(cantante)
+        
+    def agregar_playlist(self, playlist: Playlist):
+        self.playlist.append(playlist)
 
-
-    
-class ObservadorUsuario(ABC):
-    '''
-    Definimos al subscriptor, cualquier clase que quiera observar al Publicador, deberá de tener implementado este método.
-    
-    Como el publicador es el Usuario, los subcriptores lo que harán serán actualizar la sesion, cuando el sujeto observador, publique que ha escuchado una canción.
-    
-    NOTA: PREGUNTARLE AL PRFOESOR SI EN ESTE CASO ESTAMOS NUEVAMENTE DANDO MUCHA IMPORTANCIÁ AL USUARIO, IMPORTANCIA QUE DEBERIAMOS DE DARSELA AL SISTEMA MUSCIAL
-    '''
-    @abstractmethod
-    def actualizar_sesion(self, id_cancion: str, fechahora: datetime):
-        pass    
-
-
-class Usuario:
-    '''
-    Clase que representa el usuario (tambíen es el sujeto observado)
-    '''
-    def __init__(self, nombre: str):
-        self.nombre = nombre
-        self.subscriptores: list[ObservadorUsuario] = []
-        
-    def alta(self, subscriptor: ObservadorUsuario):
-        """Añade un nuevo observador a la lista."""
-        if subscriptor not in self.subscriptores:
-            self.subscriptores.append(subscriptor)
-
-    def baja(self, subscriptor: ObservadorUsuario):
-        """Elimina un observador de la lista."""
-        if subscriptor in self.subscriptores:
-            self.subscriptores.remove(subscriptor)
-
-    def notificar_escucha(self, id_cancion: str, fechahora: datetime):
-        """Avisa a todos los suscriptores de que se ha escuchado una canción."""
-        for subscriptor in self.subscriptores:
-            subscriptor.actualizar_sesion(id_cancion, fechahora)
-
-    def escuchar_cancion(self, id_cancion: str, fechahora: datetime):
-        """Simula la acción real de reproducir música."""
-        print(f"[{fechahora.strftime('%H:%M:%S')}] {self.nombre} está escuchando la canción ID: {id_cancion}")
-        
-        # en el momento que un usuario reaiza la escucha de una canción, el patrón observer manda una notificación a los subscriptores
-        self.notificar_escucha(id_cancion, fechahora)
-        
-class Recomendador(ObservadorUsuario):
-    """Clase prinicpal de sistema, que se encargará de centralizar la sesión del usuario.
-    
-    Tambíen actua como suscriptor del observer, siendo notificado cuando el cliente o usuario realiza la acción de escuchar una canción.
-    
-    Debemos de definir una sesión de escucha, para ello vamos a usar las últimas 10 canciones usadas por el usuario, lo que genera la necesidad de tener un límite de escuchapor sesión.
-    
-    """
-    _unicaInstancia = None
-    
-    def __init__(self):
-        self.catalogo = Catalogo()
-        
-        self.estadisticos_sesion = {}
-        self.historial_sesion = []
-        self.limite_sesion = 10
-        
-        # blqoue de los resultados obtenidos por cada patron: 
-        self.analizador_sesion = None      # Chain of Responsibility
-        self.estrategia = None               # Strategy
-        self.generador_recomendacion = None  # Decorator
-        
-    
-    # como particularidad de ser un Singleton, debe de tener su porpio método obtener instancia    
-    @classmethod # especificamos que este método es de la clase no de un objeto
-    def obtener_instancia(cls):
-        """Método de clase estático para obtener la instancia única."""
-        if not cls._unicaInstancia:
-            # Si no existe, creamos la única instancia y la guardamos
-            cls._unicaInstancia = cls()
-        return cls._unicaInstancia
-    
-    
-    # por el método observer
-    def actualizar_sesion(self, id_cancion: str, fechahora: datetime):
-        """
-        Reacciona cuando el usuario notifica una escucha.
-        
-        Como hemos mencionado que la manera de definir el hisotrial de escucha será amntener las últimas 10 canciones, debemos de seguir una estrucutra de fifo, es decir una cola, el primero en entrar es el primero en salir
-        """
-        
-       # añadimos la tupla cancion,fechahora a nuestro historial
-        self.historial_sesion.append((id_cancion, fechahora))
-        
-        
-        # si la sesión fuera de 10 cacniones, la canción 11, sería introducida por la canción 1 (cola)
-        if len(self.historial_sesion) > self.limite_sesion:
-            self.historial_sesion.pop(0)
-            
-        # debemos de añadir códgio para los estadísticos:
-        self.estadisticos_sesion = {}
-    def generar_recomendacion(self):
-        '''
-        Debemos de generar la recomendación usando los atributos del Recomendador
-        '''     
-        pass
     
 class ManejadorEstadisticos(ABC):
     """Clase abstracta base para los eslabones de la cadena"""
@@ -244,7 +162,7 @@ class ManejadorSentimentales(ManejadorEstadisticos):
             
         return super().calcular_estadisticos(historial_sesion, estadisticos_actuales)
         
-"""A continuación, voy a implementar el patrón de estrategia de búsqueda:"""
+#Patrón de estrategia de búsqueda:"""
 
 class EstrategiaBusqueda(ABC):
     """Lo definimos como una clase abstracta donde las clases hijas que serán las distintas estrategias que vamos a implementar para que puedan usarse
@@ -280,9 +198,16 @@ class EstrategiaBusqueda(ABC):
                         return False
         
         return True
-"""A continuación, tendremos las estrategias concretas, en este caso tenemos 3 tipos de búsquedas según dice el enunciado, estas son: alfabética, temporal y aleatoria."""
+    
+    
+#A continuación, tendremos las estrategias concretas, en este caso tenemos 3 tipos de búsquedas según dice el enunciado, estas son: alfabética, temporal y aleatoria.
 class BusquedaAlfabetica(EstrategiaBusqueda):
-    def buscar(self, catalogo, estadisticos: dict):
+    def buscar(self, catalogo : Catalogo, estadisticos: dict):
+        """
+        Ordena los ítems alfabéticamente por título/nombre 
+        y devuelve el primero que coincida con la sesión.
+        """
+        
         # lo primero que vamos a hacer es ordenar las canciones, los cantantes y las playlists
         canciones_ordenadas = sorted(catalogo.canciones, key=lambda c: c.titulo.lower())
         cantantes_ordenados = sorted(catalogo.cantantes, key=lambda c: c.nombre.lower())
@@ -298,13 +223,13 @@ class BusquedaAlfabetica(EstrategiaBusqueda):
         # ahora se hace lo mismo para la playlist y para el cantante (DOY POR ECHO QUE VAN A TENER UNOS MÉTODOS QUE DIGAN SUS ATRIBUTOS SENTIMENTALES Y SONOROS.)
         primera_playlist = None
         for playlist in playlist_ordenadas:
-             if self._hace_match(playlist.atributos_sonoros, playlist.atributos_sentimentales, estadisticos):
+             if self._hace_match(playlist.calcular_atributos(tipo = 'sonoro'), playlist.calcular_atributos(tipo = 'sentimentales'), estadisticos):
                 primera_playlist = playlist
                 break
         
         primer_cantante = None
         for cantante in cantantes_ordenados:
-             if self._hace_match(cantante.atributos_sonoros, cantante.atributos_sentimentales, estadisticos):
+             if self._hace_match(cantante.calcular_atributos(tipo = 'sonoro'), cantante.calcular_atributos(tipo = 'sentimentales'), estadisticos):
                 primer_cantante = cantante
                 break
         
@@ -384,23 +309,26 @@ class BusquedaAleatoria(EstrategiaBusqueda):
     
     
 class GeneradorRecomendacion(ABC):
+    """
+    Clase base del patrón Decorator.
+    Actua como la interfaz para todos los generadores
+    """
     @abstractmethod
-    def generar(self, catalogo, estadisticos: dict, estrategia) -> list:
+    def generar(self, catalogo: Catalogo, estadisticos: dict, estrategia) -> list:
         pass
     
 class GeneradorCanciones(GeneradorRecomendacion):
-    '''Establecemos la recomendación por defecto'''
+    '''Establecemos la recomendación por defecto, recoemndaciones de canciciones'''
     def generar(self, catalogo, estadisticos: dict, estrategia) :
+        # usamos la estrategia
+        recomendacion = estrategia.buscar(self.catalogo, estadisticos, 'canciones')
         
-        # primero usamos la estrategia, algo como
-        # resultados_no_filtrados = estrategia.buscar()
-        
-        # cuando tengamos todos los resultados , los filtramos para devolver las canciones recomendadas
-        pass
+        return [recomendacion] if recomendacion else []
 
 class DecoradorRecomendacion(GeneradorRecomendacion):
     # decorador para definir las otras subclases para generar recomendaciones
     def __init__(self, componente: GeneradorRecomendacion):
+        super().__init__(componente.catalogo)
         self.componente = componente
 
     @abstractmethod
@@ -410,29 +338,132 @@ class DecoradorRecomendacion(GeneradorRecomendacion):
 
 class GeneradorArtistas(DecoradorRecomendacion):
     def generar(self, catalogo, estadisticos: dict, estrategia) -> list:
-        # en este bloque tendremos que hacer algo como:
-        
         # primero llamamos al método padre, y generamos la recomendación de canciones
-        #resultados = self.componente.generar()
-    
+        recomendaciones = self.componente.generar(catalogo, estadisticos, estrategia)
         
-        # segundo vamos a la segunda capa, obteniendo aparte de las canciones los artistas, para ello usamos el patron strategy para buscarlos 
-        #resultados_no_filtrados = estrategia.buscar(
-        
-        # finalmente debemos de aplicar algun tipo de filtro para quedarnos con lo que queremos 
-        pass
+        # segundo vamos a la segunda capa, obteniendo aparte de las canciones los artistas, para ello usamos el patron strategy
+        recomendacion_artista = estrategia.buscar(self.catalogo, estadisticos, 'cantante')
+
+        if recomendacion_artista:
+            recomendaciones.append(recomendacion_artista)
+            
+        return recomendaciones
 
 
 class GeneradorPlaylists(DecoradorRecomendacion):
     def generar(self, catalogo, estadisticos: dict, estrategia) -> list:
-        # en este bloque tendremos que hacer algo como:
-        
         # primero llamamos al método padre, y generamos la recomendación de canciones
-        #resultados = self.componente.generar()
+        recomendaciones = self.componente.generar(estadisticos, estrategia)
+        
+        # segundo vamos a la segunda capa, obteniendo aparte de las canciones las playlist, para ello usamos el patron strategy 
+        recomendacion_playlist = estrategia.buscar(self.catalogo, estadisticos, 'playlist')
+        if recomendacion_playlist:
+            recomendaciones.append(recomendacion_playlist)
+            
+        return recomendaciones
+
+class Recomendador:
+    """Clase prinicpal de sistema, que se encargará de centralizar la sesión del usuario.
     
+    
+    Debemos de definir una sesión de escucha, para ello vamos a usar las últimas 10 canciones usadas por el usuario, lo que genera la necesidad de tener un límite de escuchapor sesión.
+    
+    """
+    _unicaInstancia = None
+    
+    def __init__(self, catalogo) :
+        self.catalogo :Catalogo = catalogo
         
-        # segundo vamos a la segunda capa, obteniendo aparte de las canciones los artistas, para ello usamos el patron strategy para buscarlos 
-        #resultados_no_filtrados = estrategia.buscar(
+        self.estadisticos_sesion : Dict[str, float] = {}
+        self.historial_sesion : List[Tuple[str, datetime]] = []
+        self.limite_sesion = 10
         
-        # finalmente debemos de aplicar algun tipo de filtro para quedarnos con lo que queremos 
+        # blqoue de los resultados obtenidos por cada patron: 
+        self.analizador_sesion = None      # Chain of Responsibility
+        self.estrategia = None               # Strategy
+        self.generador_recomendacion = None  # Decorator
+        
+    
+    # como particularidad de ser un Singleton, debe de tener su porpio método obtener instancia    
+    @classmethod # especificamos que este método es de la clase no de un objeto
+    def obtener_instancia(cls):
+        """Método de clase estático para obtener la instancia única."""
+        if not cls._unicaInstancia:
+            # Si no existe, creamos la única instancia y la guardamos
+            cls._unicaInstancia = cls()
+        return cls._unicaInstancia
+    
+    
+    def reproducir_cancion(self, id_cancion: str, fecha_hora: datetime):
+        """
+        Simula que el usuario escucha una canción. 
+        Actualiza la sesión y lanza el cálculo de estadísticos.
+        """
+        print(f"Reproduciendo canción ID: {id_cancion} a las {fecha_hora}")
+        self.__actualizar_sesion(id_cancion, fecha_hora) # internamente actualizamos la sesion de escucha
+    
+    def __actualizar_sesion(self, id_cancion: str, fechahora: datetime):
+        """
+        Reacciona cuando el usuario notifica una escucha.
+        
+        Como hemos mencionado que la manera de definir el hisotrial de escucha será amntener las últimas 10 canciones, debemos de seguir una estrucutra de fifo, es decir una cola, el primero en entrar es el primero en salir
+        """
+        
+       # añadimos la tupla cancion,fechahora a nuestro historial
+        self.historial_sesion.append((id_cancion, fechahora))
+        
+        
+        # si la sesión fuera de 10 cacniones, la canción 11, sería introducida por la canción 1 (cola)
+        if len(self.historial_sesion) > self.limite_sesion:
+            self.historial_sesion.pop(0)
+            
+        # Si el analizador está configurado, calculamos los estadísticos
+        if self.analizador_sesion:
+            self.analizador_sesion.calcular_estadisticos(self.historial_sesion, self.estadisticos_sesion)
+            
+            
+    def generar_recomendacion(self):
+        """
+        Delega la generación de la recomendación al Decorator usando el Strategy.
+        """
+        if not self._estadisticos_sesion:
+            raise SesionVaciaError(
+                "La sesión está vacía. Escucha al menos una canción primero."
+            )
+        return self.generador_recomendaciones.generar(self.estadisticos_sesion, self.estrategia)
+    
+    # para una mayor felxibilidad debemos de tener configuración en tiempo de ejecución
+    def set_estrategia(self, estrategia: EstrategiaBusqueda) -> None:
+        """Cambia la estrategia de búsqueda ."""
+        self._estrategia = estrategia
+
+    def activar_recomendacion_artistas(self) -> None:
+        """Envuelve el generador actual con el Decorador de artistas ."""
+        self._generador = GeneradorArtistas(self._generador)
+
+    def activar_recomendacion_playlists(self) -> None:
+        """Envuelve el generador actual con el Decorador de playlists (R3)."""
+        self._generador = GeneradorPlaylists(self._generador)
+
+class Usuario:
+    '''
+    Clase que representa el usuario (tambíen es el sujeto observado)
+    '''
+    def __init__(self, id, str, nombre: str, recomendador : Recomendador):
+        self.id = id
+        self.nombre = nombre
+    
+    def reproducir_cancion(self):
+        '''
+        LLamamos al recomendador
+        '''
         pass
+    
+    def solicitar_recomendacion(self):
+        '''
+        LLamamos al recomendadior
+        '''
+        pass
+        
+
+    
