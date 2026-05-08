@@ -74,4 +74,26 @@ def test_catalogo(canciones_prueba):
     cat.agregar_cancion(canciones_prueba[0])
     assert len(cat.canciones) == 1
     assert cat.canciones[0].titulo == "Canción1"
+    
+    
+# --- CHAIN OF RESPONSIBILITY ---
+
+def test_manejador_sonoros(historial_mock):
+    """Prueba principal de ManejadorSonoros: cálculo de medias y desv. típica sonoras."""
+    manejador = ManejadorSonoros()
+    estadisticos = {}
+    resultado = manejador.calcular_estadisticos(historial_mock, estadisticos)
+    
+    assert 'sonoros' in resultado
+    assert resultado['sonoros']['ritmo']['media'] == 50.0
+
+def test_manejador_sentimentales(historial_mock):
+    """Prueba principal de ManejadorSentimentales"""
+    manejador = ManejadorSentimentales()
+    estadisticos = {}
+    resultado = manejador.calcular_estadisticos(historial_mock, estadisticos)
+    
+    assert 'sentimentales' in resultado
+    assert resultado['sentimentales']['energia']['media'] == 60.0
+
 
