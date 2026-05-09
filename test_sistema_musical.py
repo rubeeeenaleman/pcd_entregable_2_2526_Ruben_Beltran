@@ -131,3 +131,66 @@ def test_busqueda_aleatoria(catalogo_lleno):
     resultado = busqueda.buscar(catalogo_lleno, estadisticos)
     # Solo comprobamos que devuelve algo que no sea None si hay match
     assert resultado['cancion'] is not None
+
+# --- DECORATOR ---
+
+def test_generador_canciones(catalogo_lleno):
+    """Prueba principal Generador base: devuelve solo la canción."""
+    gen = GeneradorCanciones()
+    estrategia = BusquedaAlfabetica()
+    estadisticos = {'sonoros': {'ritmo': {'media': 50.0}}}
+    
+    resultado = gen.generar(catalogo_lleno, estadisticos, estrategia)
+    assert len(resultado) == 1
+    assert 'cancion' in resultado[0]
+
+def test_generador_artistas(catalogo_lleno):
+    """Prueba principal Decorador Artista: envuelve al generador base y suma el artista."""
+    gen_base = GeneradorCanciones()
+    gen_artista = GeneradorArtistas(gen_base)
+    estrategia = BusquedaAlfabetica()
+    estadisticos = {'sonoros': {'ritmo': {'media': 50.0}}}
+    
+    resultado = gen_artista.generar(catalogo_lleno, estadisticos, estrategia)
+    assert len(resultado) == 2
+    assert 'cancion' in resultado[0]
+    assert 'cantante' in resultado[1]
+
+def test_generador_playlists(catalogo_lleno):
+    """Prueba principal Decorador Playlist: envuelve al generador base y suma la playlist."""
+    gen_base = GeneradorCanciones()
+    gen_playlist = GeneradorPlaylists(gen_base)
+    estrategia = BusquedaAlfabetica()
+    estadisticos = {'sonoros': {'ritmo': {'media': 50.0}}}
+    
+    resultado = gen_playlist.generar(catalogo_lleno, estadisticos, estrategia)
+    assert len(resultado) == 2
+    assert 'playlist' in resultado[1]
+
+# --- SINGLETON Y MAIN ---
+
+def test_recomendador(catalogo_lleno):
+    """Prueba principal de Recomendador: garantiza el patrón Singleton."""
+    rec1 = Recomendador.obtener_instancia(catalogo_lleno)
+    rec2 = Recomendador.obtener_instancia(catalogo_lleno)
+    
+    # Ambas variables deben apuntar exactamente al mismo espacio de memoria
+    assert rec1 is rec2 
+
+def test_usuario(catalogo_lleno):
+    """Prueba principal de Usuario: interacciones y manejo de excepciones esperadas."""
+    user = Usuario("1", "TestUser", catalogo_lleno)
+    
+    # Prueba feliz: reproducir canción existente
+    user.reproducir_cancion("A Song")
+    assert len(user._recomendador.historial_sesion) == 1
+    
+    # Prueba triste: reproducir canción inexistente
+    with pytest.raises(CancionNoExisteError):
+        user.reproducir_cancion("Cancion Fantasma")
+        
+    # Prueba triste: pedir recomendacion sin configurar el generador (o sesión vacía)
+    # Para forzar SesionVacia, reseteamos los estadísticos del singleton (por seguridad en tests)
+    user._recomendador.estadisticos_sesion = {}
+    with pytest.raises(SesionVaciaError):
+        user.solicitar_recomendacion()
