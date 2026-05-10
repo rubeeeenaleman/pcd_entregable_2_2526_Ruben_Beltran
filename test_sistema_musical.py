@@ -182,7 +182,7 @@ def test_usuario(catalogo_lleno):
     user = Usuario("1", "TestUser", catalogo_lleno)
     
     # Prueba: reproducir canción existente
-    user.reproducir_cancion("A Song")
+    user.reproducir_cancion("A Canción")
     assert len(user._recomendador.historial_sesion) == 1
     
     # Prueba: reproducir canción inexistente
