@@ -181,16 +181,16 @@ def test_usuario(catalogo_lleno):
     """Prueba principal de Usuario: interacciones y manejo de excepciones esperadas."""
     user = Usuario("1", "TestUser", catalogo_lleno)
     
-    # Prueba feliz: reproducir canción existente
+    # Prueba: reproducir canción existente
     user.reproducir_cancion("A Song")
     assert len(user._recomendador.historial_sesion) == 1
     
-    # Prueba triste: reproducir canción inexistente
+    # Prueba: reproducir canción inexistente
     with pytest.raises(CancionNoExisteError):
         user.reproducir_cancion("Cancion Fantasma")
         
-    # Prueba triste: pedir recomendacion sin configurar el generador (o sesión vacía)
-    # Para forzar SesionVacia, reseteamos los estadísticos del singleton (por seguridad en tests)
+    # Prueba: pedir recomendacion sin configurar el generador 
+    # Para forzar SesionVacia, reseteamos los estadísticos del singleton 
     user._recomendador.estadisticos_sesion = {}
     with pytest.raises(SesionVaciaError):
         user.solicitar_recomendacion()
